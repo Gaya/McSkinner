@@ -165,7 +165,7 @@ const App: React.FC = () => {
     });
 
     if (Object.keys(mergedGeometry).length > 1) { // More than just format_version
-      zip.folder('geometry')?.file('geometry.json', JSON.stringify(mergedGeometry, null, 4));
+      zip.file('geometry.json', JSON.stringify(mergedGeometry, null, 4));
     }
 
     // 4. texts/en_US.lang
