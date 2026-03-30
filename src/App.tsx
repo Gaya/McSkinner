@@ -151,12 +151,20 @@ const App: React.FC = () => {
     const mergedGeometry: any = {
       format_version: "1.8.0"
     };
-    geometries.forEach(g => {
-      mergedGeometry[g.name] = g.data;
+    
+    // Only include geometries that are actually selected by at least one skin
+    const usedGeometryIds = new Set(skins.map(s => s.geometryId));
+    const usedGeometries = geometries.filter(g => usedGeometryIds.has(g.id));
+
+    usedGeometries.forEach(g => {
+      // For default geometries, we might not have 'data'. 
+      // Minecraft usually has these built-in, but if we want to include them in the file:
+      if (Object.keys(g.data).length > 0) {
+        mergedGeometry[g.name] = g.data;
+      }
     });
-    // Add default geometries if not present and used? 
-    // Usually these are built-in, but if the user wants custom ones they must upload them.
-    if (geometries.length > 0) {
+
+    if (Object.keys(mergedGeometry).length > 1) { // More than just format_version
       zip.folder('geometry')?.file('geometry.json', JSON.stringify(mergedGeometry, null, 4));
     }
 
@@ -267,10 +275,15 @@ const App: React.FC = () => {
                               onChange={e => updateSkin(skin.id, { name: e.target.value })} 
                             />
                             <Select 
+                              showSearch
                               style={{ width: '100%' }} 
                               value={skin.geometryId}
                               onChange={val => updateSkin(skin.id, { geometryId: val })}
                               placeholder="Select Geometry"
+                              optionFilterProp="children"
+                              filterOption={(input, option) =>
+                                (option?.children as unknown as string).toLowerCase().includes(input.toLowerCase())
+                              }
                             >
                               {geometries.map(g => (
                                 <Option key={g.id} value={g.id}>{g.name}</Option>
