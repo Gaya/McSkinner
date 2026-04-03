@@ -29,6 +29,8 @@ interface SkinEntry {
   previewUrl: string;
   name: string;
   geometryId: string;
+  capeFile?: File;
+  capePreviewUrl?: string;
 }
 
 interface GeometryEntry {
@@ -99,6 +101,26 @@ const App: React.FC = () => {
     return false;
   };
 
+  const handleCapeUpload = (skinId: string, info: any) => {
+    const file = info.file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      updateSkin(skinId, {
+        capeFile: file,
+        capePreviewUrl: e.target?.result as string
+      });
+    };
+    reader.readAsDataURL(file);
+    return false; // Prevent auto upload
+  };
+
+  const removeCape = (skinId: string) => {
+    updateSkin(skinId, {
+      capeFile: undefined,
+      capePreviewUrl: undefined
+    });
+  };
+
   const removeSkin = (id: string) => {
     setSkins(prev => prev.filter(s => s.id !== id));
   };
@@ -153,6 +175,7 @@ const App: React.FC = () => {
         localization_name: skin.uniqueName,
         geometry: skin.geometryId,
         texture: skin.file.name,
+        cape: skin.capeFile ? skin.capeFile.name : undefined,
         type: "free"
       })),
       serialize_name: packId,
@@ -192,6 +215,9 @@ const App: React.FC = () => {
     // 5. PNG Files
     skins.forEach(skin => {
       zip.file(skin.file.name, skin.file);
+      if (skin.capeFile) {
+        zip.file(skin.capeFile.name, skin.capeFile);
+      }
     });
 
     const content = await zip.generateAsync({ type: 'blob' });
@@ -269,12 +295,32 @@ const App: React.FC = () => {
                       <List.Item>
                         <Card
                           cover={
-                            <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
+                            <div style={{ position: 'relative', height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
                               <img
                                 src={skin.previewUrl}
                                 alt={skin.name}
                                 style={{ maxHeight: '100%', maxWidth: '100%', imageRendering: 'pixelated' }}
                               />
+                              {skin.capePreviewUrl && (
+                                <div style={{ 
+                                  position: 'absolute', 
+                                  bottom: 8, 
+                                  right: 8, 
+                                  width: 40, 
+                                  height: 60, 
+                                  border: '1px solid #ddd', 
+                                  background: '#fff',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center'
+                                }}>
+                                  <img
+                                    src={skin.capePreviewUrl}
+                                    alt="Cape"
+                                    style={{ maxHeight: '100%', maxWidth: '100%', imageRendering: 'pixelated' }}
+                                  />
+                                </div>
+                              )}
                             </div>
                           }
                           actions={[
@@ -302,6 +348,28 @@ const App: React.FC = () => {
                                 <Option key={g.id} value={g.id}>{g.name}</Option>
                               ))}
                             </Select>
+                            <div style={{ display: 'flex', gap: 8 }}>
+                              <Upload
+                                accept=".png"
+                                showUploadList={false}
+                                beforeUpload={(file) => {
+                                  handleCapeUpload(skin.id, { file });
+                                  return false;
+                                }}
+                              >
+                                <Button size="small" icon={<UploadOutlined />}>
+                                  {skin.capeFile ? 'Change Cape' : 'Add Cape'}
+                                </Button>
+                              </Upload>
+                              {skin.capeFile && (
+                                <Button 
+                                  size="small" 
+                                  danger 
+                                  icon={<DeleteOutlined />} 
+                                  onClick={() => removeCape(skin.id)}
+                                />
+                              )}
+                            </div>
                           </Space>
                         </Card>
                       </List.Item>
