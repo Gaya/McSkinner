@@ -422,8 +422,6 @@ const App: React.FC = () => {
                                   options={[
                                     { value: 'move.arms', label: 'move.arms' },
                                     { value: 'move.legs', label: 'move.legs' },
-                                    { value: 'move.head', label: 'move.head' },
-                                    { value: 'move.torso', label: 'move.torso' },
                                   ]}
                                 />
                                 <Input
