@@ -14,7 +14,13 @@ import {
   Row,
   Col
 } from 'antd';
-import { UploadOutlined, DownloadOutlined, DeleteOutlined, FileAddOutlined } from '@ant-design/icons';
+import { 
+  UploadOutlined, 
+  DownloadOutlined, 
+  DeleteOutlined, 
+  FileAddOutlined,
+  PlusOutlined
+} from '@ant-design/icons';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { v4 as uuidv4 } from 'uuid';
@@ -31,6 +37,7 @@ interface SkinEntry {
   geometryId: string;
   capeFile?: File;
   capePreviewUrl?: string;
+  animations?: Record<string, string>;
 }
 
 interface GeometryEntry {
@@ -44,6 +51,8 @@ const App: React.FC = () => {
   const [geometries, setGeometries] = useState<GeometryEntry[]>([]);
   const [packName, setPackName] = useState('My Skin Pack');
   const [authorName, setAuthorName] = useState('Developer');
+  const [newAnimationKeys, setNewAnimationKeys] = useState<Record<string, string>>({});
+  const [newAnimationIds, setNewAnimationIds] = useState<Record<string, string>>({});
 
   const handleSkinUpload = (info: any) => {
     const file = info.file;
@@ -120,6 +129,35 @@ const App: React.FC = () => {
       capePreviewUrl: undefined
     });
   };
+  
+  const addAnimation = (skinId: string, key: string, identifier: string) => {
+    setSkins(prev => prev.map(s => {
+      if (s.id === skinId) {
+        return {
+          ...s,
+          animations: {
+            ...(s.animations || {}),
+            [key]: identifier
+          }
+        };
+      }
+      return s;
+    }));
+  };
+
+  const removeAnimation = (skinId: string, key: string) => {
+    setSkins(prev => prev.map(s => {
+      if (s.id === skinId) {
+        const newAnimations = { ...(s.animations || {}) };
+        delete newAnimations[key];
+        return {
+          ...s,
+          animations: newAnimations
+        };
+      }
+      return s;
+    }));
+  };
 
   const removeSkin = (id: string) => {
     setSkins(prev => prev.filter(s => s.id !== id));
@@ -176,6 +214,7 @@ const App: React.FC = () => {
         geometry: skin.geometryId,
         texture: skin.file.name,
         cape: skin.capeFile ? skin.capeFile.name : undefined,
+        animations: skin.animations && Object.keys(skin.animations).length > 0 ? skin.animations : undefined,
         type: "free"
       })),
       serialize_name: packId,
@@ -369,6 +408,66 @@ const App: React.FC = () => {
                                   onClick={() => removeCape(skin.id)}
                                 />
                               )}
+                            </div>
+                            
+                            <div style={{ marginTop: 8 }}>
+                              <Text strong size="small">Animations</Text>
+                              <Space.Compact style={{ width: '100%', marginTop: 4 }}>
+                                <Select
+                                  size="small"
+                                  placeholder="Key"
+                                  style={{ width: '50%' }}
+                                  value={newAnimationKeys[skin.id]}
+                                  onChange={(val) => setNewAnimationKeys(prev => ({ ...prev, [skin.id]: val }))}
+                                  options={[
+                                    { value: 'move.arms', label: 'move.arms' },
+                                    { value: 'move.legs', label: 'move.legs' },
+                                    { value: 'move.head', label: 'move.head' },
+                                    { value: 'move.torso', label: 'move.torso' },
+                                  ]}
+                                />
+                                <Input
+                                  size="small"
+                                  placeholder="ID"
+                                  value={newAnimationIds[skin.id] || ''}
+                                  onChange={(e) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: e.target.value }))}
+                                />
+                                <Button 
+                                  size="small" 
+                                  icon={<PlusOutlined />}
+                                  onClick={() => {
+                                    const key = newAnimationKeys[skin.id];
+                                    const id = newAnimationIds[skin.id];
+                                    if (key && id) {
+                                      addAnimation(skin.id, key, id);
+                                      setNewAnimationIds(prev => ({ ...prev, [skin.id]: '' }));
+                                    } else {
+                                      message.warning('Please select a key and enter an ID');
+                                    }
+                                  }}
+                                />
+                              </Space.Compact>
+                              <List
+                                size="small"
+                                dataSource={Object.entries(skin.animations || {})}
+                                locale={{ emptyText: <></> }}
+                                renderItem={([key, val]) => (
+                                  <List.Item
+                                    actions={[
+                                      <Button
+                                        type="text"
+                                        size="small"
+                                        danger
+                                        icon={<DeleteOutlined />}
+                                        onClick={() => removeAnimation(skin.id, key)}
+                                      />
+                                    ]}
+                                    style={{ padding: '4px 0' }}
+                                  >
+                                    <Text type="secondary" style={{ fontSize: '12px' }}>{key}: {val}</Text>
+                                  </List.Item>
+                                )}
+                              />
                             </div>
                           </Space>
                         </Card>
