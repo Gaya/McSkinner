@@ -134,10 +134,23 @@ const App: React.FC = () => {
     };
     zip.file('manifest.json', JSON.stringify(manifest, null, 4));
 
-    // 2. skins.json
+    // 2. Compute unique names for skins
+    const usedNames = new Set<string>();
+    const uniqueSkins = skins.map((skin) => {
+      let uniqueName = skin.name;
+      let counter = 1;
+      while (usedNames.has(uniqueName)) {
+        uniqueName = `${skin.name}_${counter}`;
+        counter++;
+      }
+      usedNames.add(uniqueName);
+      return { ...skin, uniqueName };
+    });
+
+    // 3. skins.json
     const skinsJson = {
-      skins: skins.map(skin => ({
-        localization_name: skin.name,
+      skins: uniqueSkins.map(skin => ({
+        localization_name: skin.uniqueName,
         geometry: skin.geometryId,
         texture: skin.file.name,
         type: "free"
@@ -147,7 +160,7 @@ const App: React.FC = () => {
     };
     zip.file('skins.json', JSON.stringify(skinsJson, null, 4));
 
-    // 3. geometry/geometry.json
+    // 4. geometry/geometry.json
     const mergedGeometry: any = {
       format_version: "1.8.0"
     };
@@ -168,11 +181,11 @@ const App: React.FC = () => {
       zip.file('geometry.json', JSON.stringify(mergedGeometry, null, 4));
     }
 
-    // 4. texts/en_US.lang
+    // 5. texts/en_US.lang
     let langContent = `skinpack.${packId}=${packName}\n`;
     langContent += `skinpack.${packId}.by=${authorName}\n`;
-    skins.forEach(skin => {
-      langContent += `skin.${packId}.${skin.name}=${skin.name}\n`;
+    uniqueSkins.forEach(skin => {
+      langContent += `skin.${packId}.${skin.uniqueName}=${skin.uniqueName}\n`;
     });
     zip.folder('texts')?.file('en_US.lang', langContent);
 
