@@ -220,7 +220,7 @@ const App: React.FC = () => {
                   style={{ height: 60, width: 'auto' }}
                   onClick={generatePack}
                 >
-                  Download Skin Pack (.zip)
+                  Save Skin Pack (.zip)
                 </Button>
               </Col>
             </Row>
@@ -228,18 +228,18 @@ const App: React.FC = () => {
 
           <Row gutter={24}>
             <Col span={16}>
-              <Card 
-                title="Skins" 
+              <Card
+                title="Skins"
                 extra={
-                  <Upload 
-                    accept=".png" 
-                    showUploadList={false} 
+                  <Upload
+                    accept=".png"
+                    showUploadList={false}
                     beforeUpload={(file) => {
                       handleSkinUpload({ file });
                       return false;
                     }}
                   >
-                    <Button icon={<UploadOutlined />}>Upload PNG</Button>
+                    <Button icon={<UploadOutlined />}>Open PNG</Button>
                   </Upload>
                 }
               >
@@ -254,13 +254,13 @@ const App: React.FC = () => {
                     dataSource={skins}
                     renderItem={skin => (
                       <List.Item>
-                        <Card 
+                        <Card
                           cover={
                             <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f0f0f0', overflow: 'hidden' }}>
-                              <img 
-                                src={skin.previewUrl} 
-                                alt={skin.name} 
-                                style={{ maxHeight: '100%', maxWidth: '100%', imageRendering: 'pixelated' }} 
+                              <img
+                                src={skin.previewUrl}
+                                alt={skin.name}
+                                style={{ maxHeight: '100%', maxWidth: '100%', imageRendering: 'pixelated' }}
                               />
                             </div>
                           }
@@ -269,14 +269,14 @@ const App: React.FC = () => {
                           ]}
                         >
                           <Space direction="vertical" style={{ width: '100%' }}>
-                            <Input 
-                              addonBefore="Name" 
-                              value={skin.name} 
-                              onChange={e => updateSkin(skin.id, { name: e.target.value })} 
+                            <Input
+                              addonBefore="Name"
+                              value={skin.name}
+                              onChange={e => updateSkin(skin.id, { name: e.target.value })}
                             />
-                            <Select 
+                            <Select
                               showSearch
-                              style={{ width: '100%' }} 
+                              style={{ width: '100%' }}
                               value={skin.geometryId}
                               onChange={val => updateSkin(skin.id, { geometryId: val })}
                               placeholder="Select Geometry"
@@ -297,20 +297,20 @@ const App: React.FC = () => {
                 )}
               </Card>
             </Col>
-            
+
             <Col span={8}>
-              <Card 
-                title="Geometries" 
+              <Card
+                title="Geometries"
                 extra={
-                  <Upload 
-                    accept=".json" 
-                    showUploadList={false} 
+                  <Upload
+                    accept=".json"
+                    showUploadList={false}
                     beforeUpload={(file) => {
                       handleGeometryUpload({ file });
                       return false;
                     }}
                   >
-                    <Button icon={<UploadOutlined />}>Upload JSON</Button>
+                    <Button icon={<UploadOutlined />}>Open JSON</Button>
                   </Upload>
                 }
               >
@@ -318,11 +318,7 @@ const App: React.FC = () => {
                   size="small"
                   dataSource={geometries}
                   renderItem={item => (
-                    <List.Item
-                      actions={item.id.includes('custom') && !item.id.includes('Slim') ? [
-                        <DeleteOutlined key="delete" onClick={() => setGeometries(geometries.filter(g => g.id !== item.id))} />
-                      ] : []}
-                    >
+                    <List.Item>
                       <Text ellipsis style={{ width: '100%' }}>{item.name}</Text>
                     </List.Item>
                   )}
