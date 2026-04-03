@@ -412,9 +412,9 @@ const App: React.FC = () => {
                             </div>
                             
                             <div style={{ marginTop: 8 }}>
-                              <Text strong size="small">Animations</Text>
+                              <Text strong>Animations</Text>
                               <div style={{ display: 'flex' }}>
-                                <div style={{ width: '40%', flexShrink: 0 }}>
+                                <div style={{ width: '40%', paddingRight: 8, flexShrink: 0 }}>
                                   <AutoComplete
                                     size="small"
                                     placeholder="Key"
@@ -430,7 +430,7 @@ const App: React.FC = () => {
                                 <div style={{ width: '60%', flexShrink: 0, display: 'flex' }}>
                                   <AutoComplete
                                     size="small"
-                                    style={{ flexGrow: 1 }}
+                                    style={{ flexGrow: 1, marginRight: 8 }}
                                     placeholder="ID"
                                     value={newAnimationIds[skin.id] || ''}
                                     onChange={(val) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: val }))}
