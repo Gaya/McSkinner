@@ -7,6 +7,7 @@ import {
   Card, 
   Input, 
   Select, 
+  AutoComplete,
   Space, 
   List, 
   message, 
@@ -412,39 +413,43 @@ const App: React.FC = () => {
                             
                             <div style={{ marginTop: 8 }}>
                               <Text strong size="small">Animations</Text>
-                              <Space.Compact style={{ width: '100%', marginTop: 4 }}>
-                                <Select
-                                  size="small"
-                                  placeholder="Key"
-                                  style={{ width: '50%' }}
-                                  value={newAnimationKeys[skin.id]}
-                                  onChange={(val) => setNewAnimationKeys(prev => ({ ...prev, [skin.id]: val }))}
-                                  options={[
-                                    { value: 'move.arms', label: 'move.arms' },
-                                    { value: 'move.legs', label: 'move.legs' },
-                                  ]}
-                                />
-                                <Input
-                                  size="small"
-                                  placeholder="ID"
-                                  value={newAnimationIds[skin.id] || ''}
-                                  onChange={(e) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: e.target.value }))}
-                                />
-                                <Button 
-                                  size="small" 
-                                  icon={<PlusOutlined />}
-                                  onClick={() => {
-                                    const key = newAnimationKeys[skin.id];
-                                    const id = newAnimationIds[skin.id];
-                                    if (key && id) {
-                                      addAnimation(skin.id, key, id);
-                                      setNewAnimationIds(prev => ({ ...prev, [skin.id]: '' }));
-                                    } else {
-                                      message.warning('Please select a key and enter an ID');
-                                    }
-                                  }}
-                                />
-                              </Space.Compact>
+                              <div style={{ display: 'flex' }}>
+                                <div style={{ width: '40%', flexShrink: 0 }}>
+                                  <AutoComplete
+                                    size="small"
+                                    placeholder="Key"
+                                    style={{ width: '100%' }}
+                                    value={newAnimationKeys[skin.id]}
+                                    onChange={(val) => setNewAnimationKeys(prev => ({ ...prev, [skin.id]: val }))}
+                                    options={[
+                                      { value: 'move.arms' },
+                                      { value: 'move.legs' },
+                                    ]}
+                                  />
+                                </div>
+                                <div style={{ width: '60%', flexShrink: 0, display: 'flex' }}>
+                                  <Input
+                                    size="small"
+                                    placeholder="ID"
+                                    value={newAnimationIds[skin.id] || ''}
+                                    onChange={(e) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: e.target.value }))}
+                                  />
+                                  <Button
+                                    size="small"
+                                    icon={<PlusOutlined />}
+                                    onClick={() => {
+                                      const key = newAnimationKeys[skin.id];
+                                      const id = newAnimationIds[skin.id];
+                                      if (key && id) {
+                                        addAnimation(skin.id, key, id);
+                                        setNewAnimationIds(prev => ({ ...prev, [skin.id]: '' }));
+                                      } else {
+                                        message.warning('Please select a key and enter an ID');
+                                      }
+                                    }}
+                                  />
+                                </div>
+                              </div>
                               <List
                                 size="small"
                                 dataSource={Object.entries(skin.animations || {})}
