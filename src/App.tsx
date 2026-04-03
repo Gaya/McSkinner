@@ -329,7 +329,7 @@ const App: React.FC = () => {
                   </div>
                 ) : (
                   <List
-                    grid={{ gutter: 16, column: 2 }}
+                    grid={{ gutter: 16, column: 1 }}
                     dataSource={skins}
                     renderItem={skin => (
                       <List.Item>
@@ -428,11 +428,20 @@ const App: React.FC = () => {
                                   />
                                 </div>
                                 <div style={{ width: '60%', flexShrink: 0, display: 'flex' }}>
-                                  <Input
+                                  <AutoComplete
                                     size="small"
+                                    style={{ flexGrow: 1 }}
                                     placeholder="ID"
                                     value={newAnimationIds[skin.id] || ''}
-                                    onChange={(e) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: e.target.value }))}
+                                    onChange={(val) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: val }))}
+                                    options={[
+                                      { value: 'animation.player.move.legs.stationary' },
+                                      { value: 'animation.player.move.arms.stationary' },
+                                      { value: 'animation.player.move.legs.single' },
+                                      { value: 'animation.player.move.arms.single' },
+                                      { value: 'animation.player.move.arms.statue_of_liberty' },
+                                      { value: 'animation.player.move.arms.zombie' },
+                                    ]}
                                   />
                                   <Button
                                     size="small"
