@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Layout, 
   Typography, 
@@ -47,9 +47,26 @@ interface GeometryEntry {
   data: any; // The bones and other data for this geometry
 }
 
+const animations: Record<string, string[]> = {
+  'move.arms': [
+    'animation.player.move.arms.stationary',
+    'animation.player.move.arms.single',
+    'animation.player.move.arms.statue_of_liberty',
+    'animation.player.move.arms.zombie',
+  ],
+  'move.legs': [
+    'animation.player.move.legs.inverted',
+    'animation.player.move.legs.stationary',
+    'animation.player.move.legs.single',
+  ],
+};
+
 const App: React.FC = () => {
   const [skins, setSkins] = useState<SkinEntry[]>([]);
-  const [geometries, setGeometries] = useState<GeometryEntry[]>([]);
+  const [geometries, setGeometries] = useState<GeometryEntry[]>([
+    { id: 'geometry.humanoid.custom', name: 'geometry.humanoid.custom', data: {} },
+    { id: 'geometry.humanoid.customSlim', name: 'geometry.humanoid.customSlim', data: {} }
+  ]);
   const [packName, setPackName] = useState('My Skin Pack');
   const [authorName, setAuthorName] = useState('Developer');
   const [newAnimationKeys, setNewAnimationKeys] = useState<Record<string, string>>({});
@@ -265,14 +282,6 @@ const App: React.FC = () => {
     message.success('Skin pack generated!');
   };
 
-  // Add default geometries
-  useEffect(() => {
-    setGeometries([
-      { id: 'geometry.humanoid.custom', name: 'geometry.humanoid.custom', data: {} },
-      { id: 'geometry.humanoid.customSlim', name: 'geometry.humanoid.customSlim', data: {} }
-    ]);
-  }, []);
-
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
@@ -434,14 +443,7 @@ const App: React.FC = () => {
                                     placeholder="ID"
                                     value={newAnimationIds[skin.id] || ''}
                                     onChange={(val) => setNewAnimationIds(prev => ({ ...prev, [skin.id]: val }))}
-                                    options={[
-                                      { value: 'animation.player.move.legs.stationary' },
-                                      { value: 'animation.player.move.arms.stationary' },
-                                      { value: 'animation.player.move.legs.single' },
-                                      { value: 'animation.player.move.arms.single' },
-                                      { value: 'animation.player.move.arms.statue_of_liberty' },
-                                      { value: 'animation.player.move.arms.zombie' },
-                                    ]}
+                                    options={animations[newAnimationKeys[skin.id]] ? animations[newAnimationKeys[skin.id]].map((value: string) => ({ value })) : []}
                                   />
                                   <Button
                                     size="small"
@@ -487,6 +489,18 @@ const App: React.FC = () => {
                     )}
                   />
                 )}
+                <div>
+                  <Upload
+                    accept=".png"
+                    showUploadList={false}
+                    beforeUpload={(file) => {
+                      handleSkinUpload({ file });
+                      return false;
+                    }}
+                  >
+                    <Button icon={<UploadOutlined />}>Open PNG</Button>
+                  </Upload>
+                </div>
               </Card>
             </Col>
 
