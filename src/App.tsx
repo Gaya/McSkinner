@@ -20,7 +20,8 @@ import {
   DownloadOutlined, 
   DeleteOutlined, 
   FileAddOutlined,
-  PlusOutlined
+  PlusOutlined,
+  CopyOutlined
 } from '@ant-design/icons';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -186,6 +187,24 @@ const App: React.FC = () => {
       }
       return s;
     }));
+  };
+
+  const duplicateSkin = (id: string) => {
+    setSkins(prev => {
+      const index = prev.findIndex(s => s.id === id);
+      if (index === -1) return prev;
+      
+      const skinToDuplicate = prev[index];
+      const newSkin: SkinEntry = {
+        ...skinToDuplicate,
+        id: uuidv4(),
+        name: `${skinToDuplicate.name} (Copy)`
+      };
+      
+      const newSkins = [...prev];
+      newSkins.splice(index + 1, 0, newSkin);
+      return newSkins;
+    });
   };
 
   const removeSkin = (id: string) => {
@@ -391,6 +410,7 @@ const App: React.FC = () => {
                           }
                           actions={[
                             <DeleteOutlined key="delete" onClick={() => removeSkin(skin.id)} />,
+                            <CopyOutlined key="duplicate" onClick={() => duplicateSkin(skin.id)} />,
                             <Upload
                               accept=".png"
                               showUploadList={false}
