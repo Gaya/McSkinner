@@ -72,7 +72,7 @@ const App: React.FC = () => {
   const [newAnimationKeys, setNewAnimationKeys] = useState<Record<string, string>>({});
   const [newAnimationIds, setNewAnimationIds] = useState<Record<string, string>>({});
 
-  const handleSkinUpload = (info: any) => {
+  const handleSkinUpload = (info: any, afterSkinId?: string) => {
     const file = info.file;
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -83,7 +83,18 @@ const App: React.FC = () => {
         name: file.name.replace('.png', ''),
         geometryId: 'geometry.humanoid.customSlim', // Default
       };
-      setSkins(prev => [...prev, newSkin]);
+      
+      setSkins(prev => {
+        if (afterSkinId) {
+          const index = prev.findIndex(s => s.id === afterSkinId);
+          if (index !== -1) {
+            const newSkins = [...prev];
+            newSkins.splice(index + 1, 0, newSkin);
+            return newSkins;
+          }
+        }
+        return [...prev, newSkin];
+      });
     };
     reader.readAsDataURL(file);
     return false; // Prevent auto upload
@@ -384,7 +395,7 @@ const App: React.FC = () => {
                               accept=".png"
                               showUploadList={false}
                               beforeUpload={(file) => {
-                                handleSkinUpload({ file });
+                                handleSkinUpload({ file }, skin.id);
                                 return false;
                               }}
                             >
