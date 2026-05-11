@@ -379,7 +379,17 @@ const App: React.FC = () => {
                             </div>
                           }
                           actions={[
-                            <DeleteOutlined key="delete" onClick={() => removeSkin(skin.id)} />
+                            <DeleteOutlined key="delete" onClick={() => removeSkin(skin.id)} />,
+                            <Upload
+                              accept=".png"
+                              showUploadList={false}
+                              beforeUpload={(file) => {
+                                handleSkinUpload({ file });
+                                return false;
+                              }}
+                            >
+                              <Button icon={<UploadOutlined />}>Open PNG</Button>
+                            </Upload>
                           ]}
                         >
                           <Space direction="vertical" style={{ width: '100%' }}>
@@ -495,18 +505,6 @@ const App: React.FC = () => {
                     )}
                   />
                 )}
-                <div>
-                  <Upload
-                    accept=".png"
-                    showUploadList={false}
-                    beforeUpload={(file) => {
-                      handleSkinUpload({ file });
-                      return false;
-                    }}
-                  >
-                    <Button icon={<UploadOutlined />}>Open PNG</Button>
-                  </Upload>
-                </div>
               </Card>
             </Col>
 
