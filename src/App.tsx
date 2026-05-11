@@ -196,17 +196,18 @@ const App: React.FC = () => {
 
     // 1. manifest.json
     const manifest = {
-      format_version: 2,
+      format_version: 1,
       header: {
         name: packName,
         uuid: uuidv4(),
-        version: [1, 0, 0]
+        version: [1, 0, 5],
+        description: "A skin pack generated with McSkinner"
       },
       modules: [
         {
           type: "skin_pack",
           uuid: uuidv4(),
-          version: [1, 0, 0]
+          version: [1, 0, 5]
         }
       ]
     };
@@ -268,6 +269,11 @@ const App: React.FC = () => {
       langContent += `skin.${packId}.${skin.uniqueName}=${skin.uniqueName}\n`;
     });
     zip.folder('texts')?.file('en_US.lang', langContent);
+
+    const languages = [
+      "en_US"
+    ];
+    zip.folder('texts')?.file('languages.json', JSON.stringify(languages, null, 4));
 
     // 5. PNG Files
     skins.forEach(skin => {
