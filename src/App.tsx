@@ -291,7 +291,11 @@ const App: React.FC = () => {
     if (Object.keys(mergedGeometry).length > 1) { // More than just format_version
       const data = JSON.stringify(
         mergedGeometry,
-        (_, v) => {
+        (k, v) => {
+          if (k === 'texturewidth' || k === 'textureheight') {
+            return v;
+          }
+
           return Number.isInteger(v) ? v.toFixed(1) : v;
         },
         2,
