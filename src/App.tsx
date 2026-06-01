@@ -289,7 +289,18 @@ const App: React.FC = () => {
     });
 
     if (Object.keys(mergedGeometry).length > 1) { // More than just format_version
-      zip.file('geometry.json', JSON.stringify(mergedGeometry, null, 4));
+      const data = JSON.stringify(
+        mergedGeometry,
+        (_, v) => {
+          return Number.isInteger(v) ? v.toFixed(1) : v;
+        },
+        2,
+      );
+
+      zip.file(
+        'geometry.json',
+        data.replaceAll(/"-?\d+\.0"/gm, (s) => { return s.replaceAll('"', ''); }),
+      );
     }
 
     // 5. texts/en_US.lang
