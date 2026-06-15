@@ -73,31 +73,44 @@ const App: React.FC = () => {
   const [newAnimationKeys, setNewAnimationKeys] = useState<Record<string, string>>({});
   const [newAnimationIds, setNewAnimationIds] = useState<Record<string, string>>({});
 
-  const handleSkinUpload = (info: any, afterSkinId?: string) => {
-    const file = info.file;
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      const newSkin: SkinEntry = {
-        id: uuidv4(),
-        file: file,
-        previewUrl: e.target?.result as string,
-        name: file.name.replace('.png', ''),
-        geometryId: 'geometry.humanoid.customSlim', // Default
-      };
-      
-      setSkins(prev => {
-        if (afterSkinId) {
-          const index = prev.findIndex(s => s.id === afterSkinId);
-          if (index !== -1) {
-            const newSkins = [...prev];
-            newSkins.splice(index + 1, 0, newSkin);
-            return newSkins;
-          }
-        }
-        return [...prev, newSkin];
+  const handleSkinUpload = async (info: { file: File; fileList: File[] }, afterSkinId?: string) => {
+    const files = info.fileList || [info.file];
+    
+    const readFiles = files.map(file => {
+      return new Promise<{ file: File; previewUrl: string }>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          resolve({
+            file,
+            previewUrl: e.target?.result as string
+          });
+        };
+        reader.readAsDataURL(file);
       });
-    };
-    reader.readAsDataURL(file);
+    });
+
+    const results = await Promise.all(readFiles);
+    
+    const newSkins: SkinEntry[] = results.map(res => ({
+      id: uuidv4(),
+      file: res.file,
+      previewUrl: res.previewUrl,
+      name: res.file.name.replace('.png', ''),
+      geometryId: 'geometry.humanoid.customSlim', // Default
+    }));
+
+    setSkins(prev => {
+      if (afterSkinId) {
+        const index = prev.findIndex(s => s.id === afterSkinId);
+        if (index !== -1) {
+          const updatedSkins = [...prev];
+          updatedSkins.splice(index + 1, 0, ...newSkins);
+          return updatedSkins;
+        }
+      }
+      return [...prev, ...newSkins];
+    });
+
     return false; // Prevent auto upload
   };
 
@@ -372,9 +385,19 @@ const App: React.FC = () => {
                 extra={
                   <Upload
                     accept=".png"
+                    multiple
                     showUploadList={false}
-                    beforeUpload={(file) => {
-                      handleSkinUpload({ file });
+                    beforeUpload={(file, fileList) => {
+                      // Only call handleSkinUpload once for the whole batch
+                      // antd calls beforeUpload for each file, but we only want to trigger our logic once if possible
+                      // or we can let it call for each, but handleSkinUpload would need to be careful.
+                      // Actually, if we use the fileList from the first call, we can handle all at once.
+                      
+                      // Wait, if I call it for each file, and each call processes the whole fileList, I'll have duplicates.
+                      // If I only call it when file is the first in fileList:
+                      if (file === fileList[0]) {
+                        handleSkinUpload({ file, fileList });
+                      }
                       return false;
                     }}
                   >
@@ -428,9 +451,12 @@ const App: React.FC = () => {
                             <CopyOutlined key="duplicate" onClick={() => duplicateSkin(skin.id)} />,
                             <Upload
                               accept=".png"
+                              multiple
                               showUploadList={false}
-                              beforeUpload={(file) => {
-                                handleSkinUpload({ file }, skin.id);
+                              beforeUpload={(file, fileList) => {
+                                if (file === fileList[0]) {
+                                  handleSkinUpload({ file, fileList }, skin.id);
+                                }
                                 return false;
                               }}
                             >
