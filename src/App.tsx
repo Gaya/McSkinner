@@ -426,7 +426,7 @@ const App: React.FC = () => {
         name: packName,
         uuid: uuidv4(),
         version: [1, 0, 5],
-        description: "A skin pack generated with McSkinner"
+        description: "A skin pack generated with MC Skinner"
       },
       modules: [
         {
@@ -531,7 +531,7 @@ const App: React.FC = () => {
   return (
     <Layout style={{ minHeight: '100vh' }}>
       <Header style={{ background: '#fff', padding: '0 24px', display: 'flex', alignItems: 'center' }}>
-        <Title level={3} style={{ margin: 0 }}>McSkinner</Title>
+        <Title level={3} style={{ margin: 0 }}>MC Skinner</Title>
       </Header>
       <Content style={{ padding: '24px' }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
