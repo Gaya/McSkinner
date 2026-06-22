@@ -76,42 +76,224 @@ const App: React.FC = () => {
   const handleSkinUpload = async (info: { file: File; fileList: File[] }, afterSkinId?: string) => {
     const files = info.fileList || [info.file];
     
-    const readFiles = files.map(file => {
-      return new Promise<{ file: File; previewUrl: string }>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          resolve({
-            file,
-            previewUrl: e.target?.result as string
-          });
-        };
-        reader.readAsDataURL(file);
-      });
-    });
+    const pngFiles = files.filter(f => f.name.toLowerCase().endsWith('.png'));
+    const packFiles = files.filter(f => f.name.toLowerCase().endsWith('.mcpack') || f.name.toLowerCase().endsWith('.zip'));
 
-    const results = await Promise.all(readFiles);
-    
-    const newSkins: SkinEntry[] = results.map(res => ({
-      id: uuidv4(),
-      file: res.file,
-      previewUrl: res.previewUrl,
-      name: res.file.name.replace('.png', ''),
-      geometryId: 'geometry.humanoid.customSlim', // Default
-    }));
-
-    setSkins(prev => {
-      if (afterSkinId) {
-        const index = prev.findIndex(s => s.id === afterSkinId);
-        if (index !== -1) {
-          const updatedSkins = [...prev];
-          updatedSkins.splice(index + 1, 0, ...newSkins);
-          return updatedSkins;
-        }
+    if (packFiles.length > 0) {
+      for (const packFile of packFiles) {
+        await processSkinPack(packFile);
       }
-      return [...prev, ...newSkins];
-    });
+    }
+
+    if (pngFiles.length > 0) {
+      const readFiles = pngFiles.map(file => {
+        return new Promise<{ file: File; previewUrl: string }>((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => {
+            resolve({
+              file,
+              previewUrl: e.target?.result as string
+            });
+          };
+          reader.readAsDataURL(file);
+        });
+      });
+
+      const results = await Promise.all(readFiles);
+      
+      const newSkins: SkinEntry[] = results.map(res => ({
+        id: uuidv4(),
+        file: res.file,
+        previewUrl: res.previewUrl,
+        name: res.file.name.replace('.png', ''),
+        geometryId: 'geometry.humanoid.customSlim', // Default
+      }));
+
+      setSkins(prev => {
+        if (afterSkinId) {
+          const index = prev.findIndex(s => s.id === afterSkinId);
+          if (index !== -1) {
+            const updatedSkins = [...prev];
+            updatedSkins.splice(index + 1, 0, ...newSkins);
+            return updatedSkins;
+          }
+        }
+        return [...prev, ...newSkins];
+      });
+    }
 
     return false; // Prevent auto upload
+  };
+
+  const processSkinPack = async (file: File) => {
+    try {
+      const zip = await JSZip.loadAsync(file);
+      
+      // Detect if there's a single root folder
+      const files = Object.keys(zip.files);
+      const rootFolders = new Set(files.map(f => f.split('/')[0]));
+      let basePath = '';
+      
+      // If there's only one root entry and it's a directory (or all files start with it)
+      if (rootFolders.size === 1) {
+        const root = Array.from(rootFolders)[0];
+        // Check if all files actually start with this root and it's not just a file at root
+        if (files.every(f => f.startsWith(root + '/'))) {
+          basePath = root + '/';
+        }
+      }
+
+      // 1. Parse manifest for pack info (optional, but good for context)
+      const manifestFile = zip.file(basePath + 'manifest.json');
+      if (manifestFile) {
+        const manifest = JSON.parse(await manifestFile.async('text'));
+        if (manifest.header && manifest.header.name) {
+          setPackName(manifest.header.name);
+        }
+      }
+
+      // 2. Parse localization
+      const langMap: Record<string, string> = {};
+      const langRegex = new RegExp(`^${basePath.replace(/\//g, '\\/')}texts\\/.*\\.lang$`);
+      const langFiles = zip.file(langRegex);
+      for (const langFile of langFiles) {
+        const content = await langFile.async('text');
+        content.split('\n').forEach(line => {
+          const [key, value] = line.split('=');
+          if (key && value) {
+            langMap[key.trim()] = value.trim();
+          }
+        });
+      }
+
+      // 3. Parse geometries
+      const geoRegex = new RegExp(`^${basePath.replace(/\//g, '\\/')}geometry\\/.*\\.json$`);
+      const geometryFiles = zip.file(geoRegex);
+      const packGeometries: GeometryEntry[] = [];
+      for (const geoFile of geometryFiles) {
+        try {
+          const content = await geoFile.async('text');
+          const json = JSON.parse(content);
+          Object.keys(json).forEach(key => {
+            if (key.startsWith('geometry.')) {
+              packGeometries.push({
+                id: key,
+                name: key,
+                data: json[key]
+              });
+            }
+          });
+        } catch (e) {
+          console.error('Failed to parse geometry file in pack', geoFile.name, e);
+        }
+      }
+
+      // Also check for geometry.json in root (some packs have it there)
+      const rootGeoFile = zip.file(basePath + 'geometry.json');
+      if (rootGeoFile) {
+        try {
+          const content = await rootGeoFile.async('text');
+          const json = JSON.parse(content);
+          Object.keys(json).forEach(key => {
+            if (key.startsWith('geometry.')) {
+              packGeometries.push({
+                id: key,
+                name: key,
+                data: json[key]
+              });
+            }
+          });
+        } catch (e) {
+          console.error('Failed to parse root geometry.json in pack', e);
+        }
+      }
+
+      if (packGeometries.length > 0) {
+        setGeometries(prev => {
+          const existingIds = new Set(prev.map(g => g.id));
+          const uniqueNew = packGeometries.filter(g => !existingIds.has(g.id));
+          return [...prev, ...uniqueNew];
+        });
+      }
+
+      // 4. Parse skins.json
+      const skinsJsonFile = zip.file(basePath + 'skins.json');
+      if (!skinsJsonFile) {
+        message.warning(`No skins.json found in ${file.name}`);
+        return;
+      }
+      const skinsJson = JSON.parse(await skinsJsonFile.async('text'));
+      const skinDefinitions = skinsJson.skins || [];
+
+      const loadedSkins: SkinEntry[] = [];
+      for (const skinDef of skinDefinitions) {
+        const texturePath = skinDef.texture;
+        const textureFile = zip.file(basePath + texturePath);
+        if (textureFile) {
+          const blob = await textureFile.async('blob');
+          const pngFile = new File([blob], texturePath, { type: 'image/png' });
+          const previewUrl = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target?.result as string);
+            reader.readAsDataURL(pngFile);
+          });
+
+          // Resolve name from lang or use texture name
+          let name = skinDef.localization_name || texturePath.replace('.png', '');
+          if (langMap[name]) {
+            name = langMap[name];
+          } else if (langMap[`skin.${skinsJson.serialize_name}.${name}`]) {
+            name = langMap[`skin.${skinsJson.serialize_name}.${name}`];
+          }
+
+          // Parse animations if present
+          const animations: Record<string, string> = {};
+          if (skinDef.animations) {
+            Object.entries(skinDef.animations).forEach(([key, value]) => {
+              if (typeof value === 'string') {
+                animations[key] = value;
+              }
+            });
+          }
+
+          // Handle Cape
+          let capeFile: File | undefined;
+          let capePreviewUrl: string | undefined;
+          if (skinDef.cape) {
+            const capeTextureFile = zip.file(basePath + skinDef.cape);
+            if (capeTextureFile) {
+              const capeBlob = await capeTextureFile.async('blob');
+              capeFile = new File([capeBlob], skinDef.cape, { type: 'image/png' });
+              capePreviewUrl = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target?.result as string);
+                reader.readAsDataURL(capeFile!);
+              });
+            }
+          }
+
+          loadedSkins.push({
+            id: uuidv4(),
+            file: pngFile,
+            previewUrl,
+            name,
+            geometryId: skinDef.geometry || 'geometry.humanoid.customSlim',
+            animations: Object.keys(animations).length > 0 ? animations : undefined,
+            capeFile,
+            capePreviewUrl
+          });
+        }
+      }
+
+      if (loadedSkins.length > 0) {
+        setSkins(prev => [...prev, ...loadedSkins]);
+        message.success(`Imported ${loadedSkins.length} skins from ${file.name}`);
+      }
+
+    } catch (err) {
+      console.error(err);
+      message.error(`Failed to process skinpack: ${file.name}`);
+    }
   };
 
   const handleGeometryUpload = (info: any) => {
@@ -384,24 +566,17 @@ const App: React.FC = () => {
                 title="Skins"
                 extra={
                   <Upload
-                    accept=".png"
+                    accept=".png,.mcpack,.zip"
                     multiple
                     showUploadList={false}
                     beforeUpload={(file, fileList) => {
-                      // Only call handleSkinUpload once for the whole batch
-                      // antd calls beforeUpload for each file, but we only want to trigger our logic once if possible
-                      // or we can let it call for each, but handleSkinUpload would need to be careful.
-                      // Actually, if we use the fileList from the first call, we can handle all at once.
-                      
-                      // Wait, if I call it for each file, and each call processes the whole fileList, I'll have duplicates.
-                      // If I only call it when file is the first in fileList:
                       if (file === fileList[0]) {
                         handleSkinUpload({ file, fileList });
                       }
                       return false;
                     }}
                   >
-                    <Button icon={<UploadOutlined />}>Open PNG</Button>
+                    <Button icon={<UploadOutlined />}>Open PNG / Skinpack</Button>
                   </Upload>
                 }
               >
